@@ -1,10 +1,10 @@
-# chatease-stress-tool
+# chatease-stress-test-tool
 
 > [[domain] http://studease.cn](http://studease.cn)
 
-> [[source] https://github.com/studease/chatease](https://github.com/studease/chatease)
+> [[source] https://github.com/studease/chatease-stress-test-tool](https://github.com/studease/chatease-stress-test-tool)
 
-This is a win32 command line websocket stress tool based on IOCP, specified but not only for chatease-server.
+This is a win32 command line websocket stress test tool based on IOCP, specified but not only for chatease-server.
 
 
 ## Build & Run
