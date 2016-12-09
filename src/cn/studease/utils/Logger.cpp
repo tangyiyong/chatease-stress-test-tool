@@ -17,8 +17,8 @@ Logger::log(const char *format, ...) {
 	__builtin_va_list argv;
 	__builtin_va_start(argv, format);
 	__mingw_vprintf(format, argv);
-	__builtin_va_end(argv );
 	printf("\n");
+	__builtin_va_end(argv );
 }
 
 void
@@ -26,8 +26,8 @@ Logger::err(const char *format, ...) {
 	__builtin_va_list argv;
 	__builtin_va_start(argv, format);
 	__mingw_vprintf(format, argv);
+	printf(" Error: %d.\n", (int) GetLastError());
 	__builtin_va_end(argv );
-	printf(" Error: %d.\n", (int)GetLastError());
 }
 
 void
@@ -35,6 +35,6 @@ Logger::wsaerr(const char *format, ...) {
 	__builtin_va_list argv;
 	__builtin_va_start(argv, format);
 	__mingw_vprintf(format, argv);
-	__builtin_va_end(argv );
 	printf(" Error: %d.\n", WSAGetLastError());
+	__builtin_va_end(argv );
 }

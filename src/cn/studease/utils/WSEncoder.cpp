@@ -19,62 +19,61 @@ WSEncoder::encode(WSABUF *wsabuf, const char *data, uint8_t FIN) {
 
 void
 WSEncoder::encode(WSABUF *wsabuf, const char *data, uint8_t FIN, uint8_t opcode) {
-	char maskingKey[4] = { 0x00 };
+	char  maskingKey[4] = { 0x00 };
 	encode(wsabuf, data, FIN, opcode, maskingKey);
 }
 
 void
 WSEncoder::encode(WSABUF *wsabuf, const char *data, uint8_t FIN, uint8_t opcode, char maskingKey[4]) {
-	uint64_t pos = 0, len = strlen(data);
-	uint8_t mask = maskingKey == NULL ? 0 : 1;
+	uint64_t  len, extended, i;
+	uint8_t   mask;
+	char     *dst, *src;
 
-enc:
-	char *dst = wsabuf->buf;
-	*dst++ = (FIN << 7) + opcode;
-	pos++;
+	len = strlen(data);
+	mask = maskingKey == NULL ? 0 : 1;
+
+	dst = wsabuf->buf;
+	src = (char *) data;
+
+	*dst++ = (FIN << 7) | opcode;
 	if (len < 126) {
 		*dst++ = (mask << 7) | len;
-		pos++;
+		extended = 0;
 	} else if (len <= 0xFFFF) {
-		*dst++ = (mask << 7) | 126;
-		*dst++ = (len & 0xFF00) >> 8;
-		*dst++ = len & 0xFF;
-		pos += 3;
+		*dst++ = (mask << 7) | 0x7E;
+		*dst++ = len >> 8;
+		*dst++ = len;
+		extended = 2;
 	} else {
-		*dst++ = (mask << 7) | 127;
-		*dst++ = (len & 0xFF00000000000000) >> 56;
-		*dst++ = (len & 0xFF000000000000) >> 48;
-		*dst++ = (len & 0xFF0000000000) >> 40;
-		*dst++ = (len & 0xFF00000000) >> 32;
-		*dst++ = (len & 0xFF000000) >> 24;
-		*dst++ = (len & 0xFF0000) >> 16;
-		*dst++ = (len & 0xFF00) >> 8;
-		*dst++ = len & 0xFF;
-		pos += 5;
+		*dst++ = (mask << 7) | 0x7F;
+		*dst++ = len >> 56;
+		*dst++ = len >> 48;
+		*dst++ = len >> 40;
+		*dst++ = len >> 32;
+		*dst++ = len >> 24;
+		*dst++ = len >> 16;
+		*dst++ = len >> 8;
+		*dst++ = len;
+		extended = 8;
 	}
 
-	char *src = (char *) data;
-	if (mask > 0) {
+	if (mask) {
 		*dst++ = maskingKey[0];
 		*dst++ = maskingKey[1];
 		*dst++ = maskingKey[2];
 		*dst++ = maskingKey[3];
-		pos += 4;
 	}
 
-	for (uint64_t i = 0; i < len; i++) {
-		if (wsabuf->len > 0 && pos >= wsabuf->len) { // Reset len.
-			len = i;
-			goto enc;
-		}
-		if (mask > 0) {
+	for (i = 0; i < len; i++) {
+		if (mask) {
 			*dst++ = *src++ ^ maskingKey[i % 4];
 		} else {
 			*dst++ = *src++;
 		}
-		pos++;
 	}
+
 	*dst = '\0';
-	wsabuf->len = pos;
+
+	wsabuf->len = len + 2 + extended + (mask ? 4 : 0);
 }
 

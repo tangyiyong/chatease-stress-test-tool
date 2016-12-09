@@ -8,63 +8,69 @@
 #include "WSDecoder.h"
 
 void
-WSDecoder::decode(WSABUF *wsabuf, DWORD transferred) {
-	uint64_t pos = 0;
-	char *src = wsabuf->buf;
-	char *dst = wsabuf->buf;
-	char maskingKey[4] = { '\0' };
+WSDecoder::decode(WSABUF *wsabuf) {
+	uint8_t   fin, rsv1, rsv2, rsv3, opcode, mask;
+	uint64_t  len, extended, i, b0, b1, b2, b3, b4, b5, b6, b7;
+	char     *dst, *src;
 
-dec:
-	uint8_t FIN = (*src & 0x80) >> 7;
-	uint8_t opcode = *src & 0x0F;
+	dst = wsabuf->buf;
+	src = wsabuf->buf;
+
+start:
+
+	fin = (*src >> 7) & 0x1;
+	rsv1 = (*src >> 6) & 0x1;
+	rsv2 = (*src >> 5) & 0x1;
+	rsv3 = (*src >> 4) & 0x1;
+	opcode = *src & 0xF;
 	src++;
 
-	uint8_t mask = (*src & 0x80) >> 7;
-	uint64_t len = *src & 0x7F;
+	mask = (*src >> 7) & 0x1;
+	len = *src & 0x7F;
 	src++;
 
-	if ((opcode & 0x09) == 9 || (opcode & 0x0A) == 10) {
-		goto dec; // Ignore ping & pong frame.
+	if (mask) {
+		// should not reach here.
+		return;
 	}
 
-	uint64_t byte0, byte1, byte2, byte3, byte4, byte5, byte6, byte7;
 	if (len < 126) {
-		// len = len;
+		extended = 0;
 	} else if (len == 126) {
-		byte0 = *src++;
-		byte1 = *src++;
-		len = (byte0 << 8) | byte1;
+		b0 = *src++;
+		b1 = *src++;
+		len = (b0 << 8) | b1;
+		extended = 2;
 	} else { // len == 127
-		byte0 = *src++;
-		byte1 = *src++;
-		byte2 = *src++;
-		byte3 = *src++;
-		byte4 = *src++;
-		byte5 = *src++;
-		byte6 = *src++;
-		byte7 = *src++;
-		len = (byte0 << 56) | (byte1 << 48) | (byte2 << 40) | (byte3 << 32) | (byte4 << 24) | (byte5 << 16) | (byte6 << 8) | byte7;
+		b0 = *src++;
+		b1 = *src++;
+		b2 = *src++;
+		b3 = *src++;
+		b4 = *src++;
+		b5 = *src++;
+		b6 = *src++;
+		b7 = *src++;
+		len = (b0 << 56) | (b1 << 48) | (b2 << 40) | (b3 << 32) | (b4 << 24) | (b5 << 16) | (b6 << 8) | b7;
+		extended = 8;
 	}
 
-	if (mask > 0) {
-		maskingKey[0] = *src++;
-		maskingKey[1] = *src++;
-		maskingKey[2] = *src++;
-		maskingKey[3] = *src++;
+	for (i = 0; i < len; i++) {
+		*dst++ = *src++;
 	}
 
-	pos = src - wsabuf->buf;
-	for (uint64_t i = 0; i < wsabuf->len - pos; i++) {
-		if (i == len) { // Decode next frame.
-			goto dec;
-		}
-		if (mask > 0) {
-			*dst++ = *src++ ^ maskingKey[i % 4];
-		} else {
-			*dst++ = *src++;
-		}
+	if (opcode != 1) {
+		// ignore close, ping, pong frames.
+		dst -= len;
+		goto start;
 	}
+
+	if (src < wsabuf->buf + wsabuf->len) {
+		// decode next frame.
+		goto start;
+	}
+
 	*dst = '\0';
+
 	wsabuf->len = dst - wsabuf->buf;
 }
 

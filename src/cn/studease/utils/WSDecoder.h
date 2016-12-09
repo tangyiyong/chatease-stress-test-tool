@@ -14,7 +14,7 @@
 
 class WSDecoder {
 public:
-	static void decode(WSABUF *wsabuf, DWORD transferred);
+	static void decode(WSABUF *wsabuf);
 };
 
 #endif /* WSDECODER_H_ */
