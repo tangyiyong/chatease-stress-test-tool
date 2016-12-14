@@ -13,6 +13,15 @@
 using namespace std;
 
 void
+Logger::debug(const char *format, ...) {
+	/*__builtin_va_list argv;
+	__builtin_va_start(argv, format);
+	__mingw_vprintf(format, argv);
+	printf("\n");
+	__builtin_va_end(argv );*/
+}
+
+void
 Logger::log(const char *format, ...) {
 	__builtin_va_list argv;
 	__builtin_va_start(argv, format);

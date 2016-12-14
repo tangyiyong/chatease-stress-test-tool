@@ -180,7 +180,7 @@ DWORD WINAPI WorkThread(LPVOID lpParam) {
 	addr.sin_port = htons(thParams->port);
 
 	for (int i = 0; i < thParams->connections; i++) {
-		Logger::log("Creating client: thread=%d, id=%d ...", thParams->id, i + 1);
+		//Logger::log("Creating client: thread=%d, id=%d ...", thParams->id, i + 1);
 		SOCKET fd = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
 		if (fd == INVALID_SOCKET) {
 			Logger::wsaerr("Failed to create client: thread=%d, id=%d.", thParams->id, i + 1);
@@ -220,6 +220,8 @@ DWORD WINAPI WorkThread(LPVOID lpParam) {
 		OVERLAPPED ol;
 		memset(&ol, 0, sizeof(ol));
 
+		//usleep(10000);
+
 		Logger::log("Client[thread=%d, id=%d, fd=%d] connecting ...", thParams->id, cParams->id, fd);
 		if (ConnectEx(fd, (sockaddr *)&addr, sizeof(addr), (PVOID)handshaking, handshakinglen, &dwSent, &ol) == SOCKET_ERROR) {
 			Logger::wsaerr("Failed to connect, client: thread=%d, id=%d.", thParams->id, cParams->id);
@@ -234,8 +236,9 @@ DWORD WINAPI WorkThread(LPVOID lpParam) {
 	int           connection_n = 0;
 	BOOL          status;
 
+	Logger::log("Thread %d waiting ...", thParams->id);
+
 	for ( ;; ) {
-		Logger::log("Thread waiting, id=%d ...", thParams->id);
 		status = GetQueuedCompletionStatus(completionPort, &transferred, (PULONG_PTR)&cParams,
 				(LPOVERLAPPED *)&lpoverlapped, INFINITE);
 		if (status == FALSE) {
@@ -260,8 +263,8 @@ DWORD WINAPI WorkThread(LPVOID lpParam) {
 			ioparams = new IOParams(cParams);
 		}
 
-		Logger::log("Got status of client: thread=%d, id=%d, fd=%d, transferred=%ld, iotype=%d.",
-				thParams->id, cParams->id, cParams->fd, transferred, ioparams->type);
+		/*Logger::log("Got status of client: thread=%d, id=%d, fd=%d, transferred=%ld, iotype=%d.",
+				thParams->id, cParams->id, cParams->fd, transferred, ioparams->type);*/
 
 		switch (ioparams->type) {
 		case NONE:
@@ -283,8 +286,8 @@ DWORD WINAPI WorkThread(LPVOID lpParam) {
 
 			if (cParams->upgraded == false) {
 				cParams->upgraded = true;
-				Logger::log("Upgraded: thread=%d, id=%d, fd=%d, len=%ld, str=\n%s",
-						thParams->id, cParams->id, cParams->fd, ioparams->buffer.len, ioparams->buffer.buf);
+				/*Logger::log("Upgraded: thread=%d, id=%d, fd=%d, len=%ld, str=\n%s",
+						thParams->id, cParams->id, cParams->fd, ioparams->buffer.len, ioparams->buffer.buf);*/
 			} else {
 				ioparams->message_n++;
 

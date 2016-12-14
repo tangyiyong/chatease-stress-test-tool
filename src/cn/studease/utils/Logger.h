@@ -10,6 +10,7 @@
 
 class Logger {
 public:
+	static void debug(const char *format, ...);
 	static void log(const char *format, ...);
 	static void err(const char *format, ...);
 	static void wsaerr(const char *format, ...);
