@@ -220,7 +220,7 @@ DWORD WINAPI WorkThread(LPVOID lpParam) {
 		OVERLAPPED ol;
 		memset(&ol, 0, sizeof(ol));
 
-		//usleep(10000);
+		usleep(10000);
 
 		Logger::log("Client[thread=%d, id=%d, fd=%d] connecting ...", thParams->id, cParams->id, fd);
 		if (ConnectEx(fd, (sockaddr *)&addr, sizeof(addr), (PVOID)handshaking, handshakinglen, &dwSent, &ol) == SOCKET_ERROR) {
